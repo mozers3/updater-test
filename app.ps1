@@ -33,19 +33,16 @@ if ([string]::IsNullOrEmpty($scriptDir)) {
     $scriptDir = [Environment]::CurrentDirectory
 }
 
-# --- 1. Проверка версии с таймаутом 3 секунды ---
 $remoteVersion = $null
 try {
     $response = Invoke-WebRequest -Uri "$serverUrl/version" -TimeoutSec 3 -UseBasicParsing -ErrorAction Stop
     $remoteVersion = $response.Content.Trim()
 } catch {
-    # Если таймаут, ошибка сети или файл не найден - молча продолжаем работу старой версии
     $remoteVersion = $null
 }
 
 # --- 2. Сравнение версий и запрос согласия ---
 if ($remoteVersion -and $remoteVersion -ne $Config.Version) {
-    # Подключаем сборки для отображения красивого GUI-окна (даже если консоль скрыта)
     Add-Type -AssemblyName System.Windows.Forms
     
     $msg = "Доступна новая версия приложения: $remoteVersion`n(Текущая версия: $($Config.Version))`n`nЗагрузить и установить обновление?"
@@ -74,4 +71,4 @@ if ($remoteVersion -and $remoteVersion -ne $Config.Version) {
 }
 
 # --- Основной код вашего приложения ---
-[System.Windows.Forms.MessageBox]::Show("Приложение запущено (версия $($Config.Version))", "Статус")
+[void][System.Windows.Forms.MessageBox]::Show("Приложение запущено (версия $($Config.Version))", "Статус")
