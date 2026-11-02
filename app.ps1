@@ -74,4 +74,4 @@ if ($remoteVersion -and $remoteVersion -ne $Config.Version) {
 }
 
 # --- Основной код вашего приложения ---
-[System.Windows.Forms.MessageBox]::Show("Приложение запущено (версия $Config.Version)", "Статус")
+[System.Windows.Forms.MessageBox]::Show("Приложение запущено (версия $($Config.Version))", "Статус")
