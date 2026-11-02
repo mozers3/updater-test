@@ -48,7 +48,7 @@ if ($remoteVersion -and $remoteVersion -ne $Config.Version) {
     # Подключаем сборки для отображения красивого GUI-окна (даже если консоль скрыта)
     Add-Type -AssemblyName System.Windows.Forms
     
-    $msg = "Доступна новая версия приложения: $remoteVersion`n(Текущая версия: $Config.Version)`n`nЗагрузить и установить обновление?"
+    $msg = "Доступна новая версия приложения: $remoteVersion`n(Текущая версия: $($Config.Version))`n`nЗагрузить и установить обновление?"
     $result = [System.Windows.Forms.MessageBox]::Show($msg, "Доступно обновление", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
 
     if ($result -eq 'Yes') {
@@ -74,4 +74,4 @@ if ($remoteVersion -and $remoteVersion -ne $Config.Version) {
 }
 
 # --- Основной код вашего приложения ---
-# [System.Windows.Forms.MessageBox]::Show("Приложение запущено (версия $Config.Version)", "Статус")
+[System.Windows.Forms.MessageBox]::Show("Приложение запущено (версия $Config.Version)", "Статус")
