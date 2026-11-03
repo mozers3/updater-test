@@ -2,7 +2,7 @@
 
 $Config = @{
 	Title             = 'POS Services Manager'
-	Version           = '0.1.0'
+	Version           = '0.2.0'
 	ServerUrl         = 'https://github.com/mozers3/updater-test/raw/refs/heads/main'
 }
 
@@ -83,7 +83,7 @@ if ($remoteVersion -and $remoteVersion -ne $Config.Version) {
 function Write-UpdLog {
 	param([string]`$Message, [string]`$Level = 'INFO')
 	try {
-		`$logPath = Join-Path '$scriptDir' '$baseName_update.log'
+		`$logPath = Join-Path '$scriptDir' 'update.log'
 		`$timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 		"[`$timestamp] [`$Level] [UPDATER] `$Message" | Out-File -FilePath `$logPath -Append -Encoding UTF8
 	} catch {}
