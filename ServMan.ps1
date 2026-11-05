@@ -15,16 +15,16 @@ if ($cmdLine -eq "COMPILE") {
 
 Add-Type -AssemblyName System.Windows.Forms
 
-if ($PSCommandPath) {
-	$currentPath = $PSCommandPath
-	$scriptDir = $PSScriptRoot
-} else {
-	$currentPath = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
-	$scriptDir = Split-Path $currentPath
-}
-$baseName = [System.IO.Path]::GetFileNameWithoutExtension($currentPath)
+function Get-Update {
+	if ($PSCommandPath) {
+		$currentPath = $PSCommandPath
+		$scriptDir = $PSScriptRoot
+	} else {
+		$currentPath = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+		$scriptDir = Split-Path $currentPath
+	}
+	$baseName = [System.IO.Path]::GetFileNameWithoutExtension($currentPath)
 
-function Get-UpdateError {
 	[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
 	$ProgressPreference = 'SilentlyContinue'
 
@@ -87,8 +87,7 @@ exit
 	exit 
 }
 
-# --- Проверка обновления и обработка ошибок ---
-$updateError = Get-UpdateError
+$updateError = Get-Update
 if ($updateError) {
 	[System.Windows.Forms.MessageBox]::Show($updateError, "Ошибка обновления", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
 }
