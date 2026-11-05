@@ -15,30 +15,45 @@ if ($cmdLine -eq "COMPILE") {
 
 Add-Type -AssemblyName System.Windows.Forms
 
-function Update() {
-	$currentExePath = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+function Get-UpdateError {
+	# Надежное определение пути: работает и в скомпилированном EXE, и при тестировании из консоли/ISE
+	$currentExePath = $MyInvocation.MyCommand.Definition
+	if ([string]::IsNullOrEmpty($currentExePath)) {
+		$currentExePath = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+	}
+	
 	$scriptDir = Split-Path -Parent $currentExePath
 	$baseName = [System.IO.Path]::GetFileNameWithoutExtension($currentExePath)
 
 	[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls13
+	$ProgressPreference = 'SilentlyContinue'
 
 	$remoteVersion = $null
 	try {
-		Write-Log "Запрос версии с сервера: $($Config.ServerUrl)/version"
 		$response = Invoke-WebRequest -Uri "$($Config.ServerUrl)/version" -TimeoutSec 3 -UseBasicParsing -ErrorAction Stop
 		$remoteVersion = $response.Content.Trim()
-	} catch { return 0 }
+	} catch {
+		return "Не удалось проверить версию (таймаут или ошибка сети)."
+	}
 
-	if ($remoteVersion -and $remoteVersion -eq $Config.Version) { return 0 }
+	if ([string]::IsNullOrEmpty($remoteVersion)) { return "Некорректный ответ сервера." }
+	if ($remoteVersion -eq $Config.Version) { return $null } # Обновление не требуется
+
 	$msg = "Доступна новая версия приложения: $remoteVersion`n(Текущая версия: $($Config.Version))`n`nЗагрузить и установить обновление?"
-	$result = [System.Windows.Forms.MessageBox]::Show($msg, "Доступно обновление", "YesNo", "Question")
-	if ($result -ne 'Yes') { return 0 }
+	$result = [System.Windows.Forms.MessageBox]::Show($msg, "Доступно обновление", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+	
+	if ($result -ne 'Yes') { return $null } # Пользователь отказался
+
 	$newExePath = Join-Path $scriptDir "${baseName}_new.exe"
 	$downloadUrl = "$($Config.ServerUrl)/$baseName.exe"
+	
 	try {
 		Invoke-WebRequest -Uri $downloadUrl -OutFile $newExePath -UseBasicParsing -ErrorAction Stop
-	} catch { return 1 }
-	if (!(Test-Path $newExePath)) { return 1 }
+	} catch {
+		return "Ошибка загрузки файла:`n$($_.Exception.Message)"
+	}
+
+	if (!(Test-Path $newExePath)) { return "Файл не был сохранен на диск." }
 
 	$updateLogic = @"
 `$appDir = '$scriptDir'
@@ -52,26 +67,33 @@ while ((Get-Process -Name `$baseName -ErrorAction SilentlyContinue) -and `$timeo
 	`$timeout--
 }
 Start-Sleep -Seconds 1
+
 try {
 	Remove-Item `$appExe -Force -ErrorAction Stop
 	Rename-Item `$newAppExe "`$baseName.exe" -Force -ErrorAction Stop
 	Start-Process `$appExe -WorkingDirectory `$appDir
 } catch {
 	Add-Type -AssemblyName System.Windows.Forms
-	[System.Windows.Forms.MessageBox]::Show("Ошибка при установке обновления:`n`$_", "Ошибка", "OK", "Error")
+	[System.Windows.Forms.MessageBox]::Show("Ошибка при установке обновления:`n`$_", "Ошибка", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
 }
 exit
 "@
 
 	$bytes = [System.Text.Encoding]::Unicode.GetBytes($updateLogic)
 	$encodedCommand = [Convert]::ToBase64String($bytes)
-
 	$psArgs = "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $encodedCommand"
+
 	Start-Process powershell.exe -ArgumentList $psArgs -WindowStyle Hidden
-	exit
+	
+	# Если дошли сюда, обновление успешно инициировано. Завершаем текущий процесс.
+	exit 
 }
 
-if (Update) { [System.Windows.Forms.MessageBox]::Show("Не удалось загрузить обновление.`n`n$_", "Ошибка обновления", "OK", "Error") }
+# --- Проверка обновления и обработка ошибок ---
+$updateError = Get-UpdateError
+if ($updateError) {
+	[System.Windows.Forms.MessageBox]::Show($updateError, "Ошибка обновления", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+}
 
 # --- Основной код приложения ---
 $frmMain = New-Object System.Windows.Forms.Form -Property @{
@@ -79,5 +101,3 @@ $frmMain = New-Object System.Windows.Forms.Form -Property @{
 	Text = "$($Config.Title) v$($Config.Version)"
 }
 [void]$frmMain.ShowDialog()
-
-Write-Log "=== Приложение закрыто ==="
