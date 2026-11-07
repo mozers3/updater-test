@@ -3,13 +3,15 @@
 $Config = @{
 	Title             = 'POS Services Manager'
 	Version           = '0.2.0'
-	ServerUrl         = 'https://github.com/mozers3/updater-test/raw/refs/heads/main'
+	ServerUrl         = 'https://raw.githubusercontent.com/mozers3/updater-test/main'
 }
 
 # --- Блок компиляции ---
 if ($cmdLine -eq "COMPILE") { 
 	Invoke-PS2EXE -InputFile $PSCommandPath -x64 -noConsole -verbose -Title $Config.Title -Product $Config.Title -Version $Config.Version
-	Set-Content -Path version -Value $Config.Version
+	$exePath = [System.IO.Path]::ChangeExtension($PSCommandPath, '.exe')
+	$hash = (Get-FileHash -Path $exePath -Algorithm MD5).Hash
+	Set-Content -Path "version" -Value "$($Config.Version)*$hash"
 	Exit 0
 }
 
@@ -37,10 +39,11 @@ function Get-Update {
 	}
 
 	if ([string]::IsNullOrEmpty($remoteVersion)) { return $null }
-	if ($remoteVersion -eq $Config.Version) { return $null } # Обновление не требуется
+	$ver, $hash = $remoteVersion.Split('*')
+	if ($ver -eq $Config.Version) { return $null } # Обновление не требуется
 
-	$msg = "Доступна новая версия приложения: $remoteVersion`n(Текущая версия: $($Config.Version))`n`nЗагрузить и установить обновление?"
-	$result = [System.Windows.Forms.MessageBox]::Show($msg, "Доступно обновление", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+	$msg = "Доступна новая версия приложения: $ver`n`nЗагрузить и установить?"
+	$result = [System.Windows.Forms.MessageBox]::Show($msg, "$($Config.Title) $($Config.Version)", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
 
 	if ($result -ne 'Yes') { return $null } # Пользователь отказался
 
@@ -54,6 +57,7 @@ function Get-Update {
 	}
 
 	if (!(Test-Path $newExePath)) { return "Файл не был сохранен на диск." }
+	if ($hash -ne (Get-FileHash -Path $newExePath -Algorithm MD5).Hash) { return "Скачан битый файл." }
 
 	$updateLogic = @"
 `$appDir = '$scriptDir'
