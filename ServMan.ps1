@@ -57,7 +57,10 @@ function Get-Update {
 	}
 
 	if (!(Test-Path $newExePath)) { return "Файл не был сохранен на диск." }
-	if ($hash -ne (Get-FileHash -Path $newExePath -Algorithm MD5).Hash) { return "Скачан битый файл." }
+	if ($hash -ne (Get-FileHash -Path $newExePath -Algorithm MD5).Hash) {
+		Remove-Item $newExePath -Force -ErrorAction Stop
+		return "Скачан битый файл."
+	}
 
 	$updateLogic = @"
 `$appDir = '$scriptDir'
