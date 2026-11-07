@@ -2,13 +2,13 @@
 
 $Config = @{
 	Title             = 'POS Services Manager'
-	Version           = '0.1.0'
+	Version           = '0.2.0'
 	ServerUrl         = 'https://raw.githubusercontent.com/mozers3/updater-test/main'
 }
 
 # --- Блок компиляции ---
 if ($cmdLine -eq "COMPILE") { 
-	Invoke-PS2EXE -InputFile $PSCommandPath -x64 -noConsole -verbose -Title $Config.Title -Product $Config.Title -Version $Config.Version
+	Invoke-PS2EXE -InputFile $PSCommandPath -x86 -noConsole -verbose -Title $Config.Title -Product $Config.Title -Version $Config.Version
 	$exePath = [System.IO.Path]::ChangeExtension($PSCommandPath, '.exe')
 	$hash = (Get-FileHash -Path $exePath -Algorithm MD5).Hash
 	Set-Content -Path "version" -Value "$($Config.Version)*$hash"
@@ -93,7 +93,7 @@ exit
 
 $updateError = Get-Update
 if ($updateError) {
-	[System.Windows.Forms.MessageBox]::Show($updateError, "Ошибка обновления", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+	[void][System.Windows.Forms.MessageBox]::Show($updateError, "Ошибка обновления", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
 }
 
 # --- Основной код приложения ---
