@@ -2,7 +2,7 @@
 
 $Config = @{
 	Title             = 'POS Services Manager'
-	Version           = '0.2.0'
+	Version           = '0.1.0'
 	ServerUrl         = 'https://raw.githubusercontent.com/mozers3/updater-test/main'
 }
 
