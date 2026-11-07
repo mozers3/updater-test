@@ -31,8 +31,9 @@ function Get-Update {
 	$ProgressPreference = 'SilentlyContinue'
 
 	$remoteVersion = $null
+	$headers = @{ 'Cache-Control'='no-cache'; 'Pragma'='no-cache' }
 	try {
-		$response = Invoke-WebRequest -Uri "$($Config.ServerUrl)/version" -TimeoutSec 3 -UseBasicParsing -ErrorAction Stop
+		$response = Invoke-WebRequest -Uri "$($Config.ServerUrl)/version" -TimeoutSec 3 -UseBasicParsing -Headers $headers -ErrorAction Stop
 		$remoteVersion = $response.Content.Trim()
 	} catch {
 		return $null
